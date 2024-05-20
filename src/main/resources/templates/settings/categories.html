@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/layout1}">
+
+<th:block layout:fragment="css">
+    <style>
+        .card .card-body {
+            padding: 1.25rem;
+        }
+
+        td {
+            text-align: center;
+        }
+
+        .popover-body {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .color-box {
+            width: 15px;
+            height: 15px;
+            margin: 5px;
+        }
+    </style>
+</th:block>
+
+<head>
+    <meta name="_csrf" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:content="${_csrf.headerName}" />
+</head>
+
+<div layout:fragment="content">
+    <ul class="nav">
+        <li class="col-12 grid-margin nav-item">
+            <div class="card">
+                <div class="card-body">
+                    <a class="nav-link" data-toggle="collapse" href="#incomeCategory" aria-expanded="false" aria-controls="ui-basic">
+                        <h4 class="card-title" style="margin: 0; display: flex; justify-content: space-between;">
+                            <div>수입 카테고리 관리</div>
+                            <i class="mdi mdi-chevron-down"></i>
+                        </h4>
+                    </a>
+                    <div class="collapse show" id="incomeCategory">
+                        <hr>
+                        <p class="card-description" style="padding-left: 1.5rem;">
+                            수입 카테고리
+                        </p>
+                        <table class="table sortable" style="width: 100%;">
+                            <tbody>
+                            <tr th:each="ic : ${incomeCategories}"
+                                th:attr="category-id=${ic.id}"
+                                class="sortable-item">
+                                <td style="width: 15%;">
+                                    <button type="button" th:onclick="'javascript:deleteCategory(' + ${ic.id} + ');'" style="background-color: inherit; border: none; color: maroon">
+                                        <i class="mdi mdi-minus-circle"></i>
+                                    </button>
+                                </td>
+                                <td style="width: 55%; text-align: left;">
+                                    <span th:text="${ic.name}" class="category-text"></span>
+                                    <input type="text" class="form-control category-input" style="display: none;">
+                                </td>
+                                <td style="width: 10%;">
+                                    <button type="button" th:class="'btn ' + ${ic.color}"
+                                            style="width: 25px; height: 25px;"
+                                            data-bs-toggle="popover"
+                                            data-bs-title="Color Palette" data-bs-html="true"
+                                            data-bs-content='' th:attr="category-id=${ic.id}">
+
+                                    </button>
+                                </td>
+                                <td style="width: 10%;">
+                                    <button type="button" class="edit-button"
+                                            style="background-color: inherit; border: none; color: white; min-width: 25px;">
+                                        <i class="mdi mdi-pencil"></i>
+                                    </button>
+                                </td>
+                                <td style="width: 10%;">
+                                    <div style="display: flex; flex-direction: column; font-size: 80%; min-width: 25px;">
+                                        <i class="mdi mdi-chevron-up"></i>
+                                        <i class="mdi mdi-chevron-down"></i>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr style="background-color: inherit; border: none; color: white">
+                                    <td colspan="5" style="width: 100%; text-align: -webkit-center;">
+                                        <a class="nav-link" data-toggle="collapse" href="#addIncomeCategory"
+                                           aria-expanded="false" aria-controls="ui-basic" style="width: fit-content;">
+                                            카테고리 추가 <i class="mdi mdi-plus" style="font-size: larger;"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+
+                                <tr id="addIncomeCategory" class="collapse">
+                                    <td style="width: 15%; background-color: inherit; color: white;">
+                                        <i class="mdi mdi-menu-right" style="font-size: larger;"></i>
+                                    </td>
+                                    <td style="width: 55%; text-align: left;">
+                                        <input type="text" class="form-control category-input" required>
+                                    </td>
+                                    <td style="width: 10%;">
+                                        <button type="button" class="btn cloud"
+                                                style="width: 25px; height: 25px;"
+                                                data-bs-toggle="popover"
+                                                data-bs-title="Color Palette" data-bs-html="true"
+                                                data-bs-content=''>
+
+                                        </button>
+                                    </td>
+                                    <td style="width: 10%;">
+                                        <button type="button" class="save-btn"
+                                                style="background-color: inherit; border: none; color: white; min-width: 25px;">
+                                            저장
+                                        </button>
+                                    </td>
+                                    <td style="width: 10%;">
+                                        <button type="button" class="cancel-btn"
+                                                style="background-color: inherit; border: none; color: white; min-width: 25px;">
+                                            취소
+                                        </button>
+                                    </td>
+                                    <div class="col-sm-1"></div>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </li>
+
+        <li class="col-12 grid-margin nav-item">
+            <div class="card">
+                <div class="card-body">
+                    <a class="nav-link" data-toggle="collapse" href="#expenseCategory" aria-expanded="false" aria-controls="ui-basic">
+                        <h4 class="card-title" style="margin: 0; display: flex; justify-content: space-between;">
+                            <div>지출 카테고리 관리</div>
+                            <i class="mdi mdi-chevron-down"></i>
+                        </h4>
+                    </a>
+                    <div class="collapse show" id="expenseCategory">
+                        <hr>
+                        <p class="card-description" style="padding-left: 1.5rem;">
+                            지출 카테고리
+                        </p>
+                        <table class="table sortable" style="width: 100%;">
+                            <tbody>
+                            <tr th:each="oc : ${expenseCategories}"
+                                th:attr="category-id=${oc.id}"
+                                class="sortable-item">
+                                <td style="width: 15%;">
+                                    <button type="button" th:onclick="'javascript:deleteCategory(' + ${oc.id} + ');'" style="background-color: inherit; border: none; color: maroon">
+                                        <i class="mdi mdi-minus-circle"></i>
+                                    </button>
+                                </td>
+                                <td style="width: 55%; text-align: left;">
+                                    <span th:text="${oc.name}" class="category-text"></span>
+                                    <input type="text" class="form-control category-input" style="display: none;">
+                                </td>
+                                <td style="width: 10%;">
+                                    <button type="button" th:class="'btn ' + ${oc.color}"
+                                            style="width: 25px; height: 25px;"
+                                            data-bs-toggle="popover"
+                                            data-bs-title="Color Palette" data-bs-html="true"
+                                            data-bs-content='' th:attr="category-id=${oc.id}">
+
+                                    </button>
+                                </td>
+                                <td style="width: 10%;">
+                                    <button type="button" class="edit-button"
+                                            style="background-color: inherit; border: none; color: white; min-width: 25px;">
+                                        <i class="mdi mdi-pencil"></i>
+                                    </button>
+                                </td>
+                                <td style="width: 10%;">
+                                    <div style="display: flex; flex-direction: column; font-size: 80%; min-width: 25px;">
+                                        <i class="mdi mdi-chevron-up"></i>
+                                        <i class="mdi mdi-chevron-down"></i>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                            <tfoot>
+                            <tr style="background-color: inherit; border: none; color: white">
+                                <td colspan="5" style="width: 100%; text-align: -webkit-center;">
+                                    <a class="nav-link" data-toggle="collapse" href="#addExpenseCategory"
+                                       aria-expanded="false" aria-controls="ui-basic" style="width: fit-content;">
+                                        카테고리 추가 <i class="mdi mdi-plus" style="font-size: larger;"></i>
+                                    </a>
+                                </td>
+                            </tr>
+
+                            <tr id="addExpenseCategory" class="collapse">
+                                <td style="width: 15%; background-color: inherit; color: white;">
+                                    <i class="mdi mdi-menu-right" style="font-size: larger;"></i>
+                                </td>
+                                <td style="width: 55%; text-align: left;">
+                                    <input type="text" class="form-control category-input" required>
+                                </td>
+                                <td style="width: 10%;">
+                                    <button type="button" class="btn cloud"
+                                            style="width: 25px; height: 25px;"
+                                            data-bs-toggle="popover"
+                                            data-bs-title="Color Palette" data-bs-html="true"
+                                            data-bs-content=''>
+
+                                    </button>
+                                </td>
+                                <td style="width: 10%;">
+                                    <button type="button" class="save-btn"
+                                            style="background-color: inherit; border: none; color: white; min-width: 25px;">
+                                        저장
+                                    </button>
+                                </td>
+                                <td style="width: 10%;">
+                                    <button type="button" class="cancel-btn"
+                                            style="background-color: inherit; border: none; color: white; min-width: 25px;">
+                                        취소
+                                    </button>
+                                </td>
+                                <div class="col-sm-1"></div>
+                            </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </li>
+    </ul>
+
+    <div class="color-container">
+        <span class="color-box cloud"></span>
+        <span class="color-box red"></span>
+        <span class="color-box orange"></span>
+        <span class="color-box yellow"></span>
+        <span class="color-box green"></span>
+        <span class="color-box moss"></span>
+        <span class="color-box blue"></span>
+        <span class="color-box lavender"></span>
+    </div>
+</div>
+
+<th:block layout:fragment="script">
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery UI -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <script th:inline="javascript">
+
+        // 토큰 값
+        var token = $("meta[name='_csrf']").attr("content");
+		var header = $("meta[name='_csrf_header']").attr("content");
+
+        var originalWidths = []; // 셀 너비를 저장해놓을 공간
+
+        // 셀의 너비 저장(페이지가 로드될 때, 창 크기가 변경될 때)
+        function setOriginalWidths() {
+            var cells = document.querySelectorAll('tbody td');
+            cells.forEach((cell, index) => {
+                originalWidths[index] = cell.offsetWidth;
+            });
+        }
+
+        $(document).ready(function() {
+            setOriginalWidths();
+        });
+
+        window.addEventListener('resize', function(event){
+            clearTimeout(resizeTimeout); // 빠른 크기 전환 처리 위해
+            resizeTimeout = setTimeout(function() {
+                setOriginalWidths();
+            }, 200);
+        });
+
+        /* 카테고리 등록 */
+        $('.save-btn').on('click', function() {
+            var type = $(this).closest('tr').attr('id') === "addIncomeCategory" ? "income" : "expense";
+            var name = $(this).closest('tr').find('.category-input').val();
+            var color = $(this).closest('tr').find('[data-bs-toggle="popover"]').attr('class').split(' ')[1];
+
+            if (name == '') {
+                alert('카테고리의 이름을 지정해주세요.');
+                return;
+            }
+
+            var paramData = {
+                type: type,
+                name: name,
+                color: color
+            }
+            var param = JSON.stringify(paramData);
+
+            $.ajax({
+                url: '/category/addCategory',
+                type: 'POST',
+                contentType: 'application/json',
+                data: param,
+                beforeSend: function(xhr) {
+                    xhr.setRequestHeader(header, token);
+                },
+                success: function(result, status) {
+                    alert(result);
+
+                    location.reload();
+                },
+                error: function(xhr, status, error) {
+                    alert(xhr.responseText);
+                }
+            });
+        });
+
+        // 등록 취소
+        $('.cancel-btn').on('click', function() {
+           $('.category-input').val('');
+           $(this).closest('tr').find('[data-bs-toggle="popover"]').removeClass().addClass('btn').addClass('cloud');
+        });
+
+        /* 카테고리 삭제 */
+        function deleteCategory(id) {
+            if (confirm("정말로 삭제하시겠습니까?")) {
+                $.ajax({
+                    url: '/category/deleteCategory/' + id,
+                    type: 'DELETE',
+                    contentType: 'application/json',
+                    beforeSend: function(xhr) {
+                        xhr.setRequestHeader(header, token);
+                    },
+                    success: function(result, status) {
+                        alert(result);
+
+                        location.reload();
+                    },
+                    error: function(xhr, status, error) {
+                        alert(xhr.responseText);
+                    }
+                });
+            }
+        }
+
+        /* 색상 변경 */
+        // 팝오버에서 색상 선택
+        const popoverTriggerList = document.querySelectorAll('tbody [data-bs-toggle="popover"]');
+        const popoverList = [...popoverTriggerList].map(popoverTriggerEl => {
+            popoverTriggerEl.setAttribute('data-bs-content', $('.color-container').html());
+            return new bootstrap.Popover(popoverTriggerEl, {
+                content: function() { // 팝오버가 열릴 때 컨텐츠에 대한 이벤트 추가
+                    $(document).on('click', '.color-box', function() {
+                        var selectedColorClass = $(this).attr('class').split(' ')[1];
+                        var connectedBtn = $('[aria-describedby="' + $(this).parent().parent().attr('id') + '"]');
+                        var selectedId = connectedBtn.attr('category-id');
+
+                        // 선택된 색상을 서버로 전송
+                        if (!connectedBtn.hasClass(selectedColorClass)) updateColor(selectedId, selectedColorClass, connectedBtn);
+                    });
+                    return $('.color-container').html();
+                }
+            });
+        });
+
+        const popoverTriggers = document.querySelectorAll('tfoot [data-bs-toggle="popover"]');
+        popoverTriggers.forEach((popoverTrigger) => {
+            popoverTrigger.setAttribute('data-bs-content', $('.color-container').html());
+
+            const popover = new bootstrap.Popover(popoverTrigger, {
+                content: function () { // 팝오버가 열릴 때 컨텐츠에 대한 이벤트 추가
+                    $(document).on('click', '.color-box', function() {
+                        var selectedColorClass = $(this).attr('class').split(' ')[1];
+
+                        // 팝오버를 닫고 버튼의 색상 변경
+                        if (!popoverTrigger.classList.contains(selectedColorClass)) {
+                                popover.hide();
+                                popoverTrigger.className = 'btn ' + selectedColorClass;
+                        }
+                    });
+                    return document.querySelector('.color-container').innerHTML;
+                }
+            });
+        })
+
+        // 팝오버 닫힐 때 이벤트 핸들러 제거
+        $(document).on('hidden.bs.popover', function() {
+            $(document).off('click', '.color-box');
+        });
+
+        function updateColor(id, color, connectedBtn) {
+			var paramData = {
+			    id : id,
+			    color : color
+			}
+			var param = JSON.stringify(paramData);
+
+            $.ajax({
+                url: '/category/updateColor',
+                type: 'POST',
+                contentType: 'application/json',
+                data : param,
+                beforeSend : function(xhr) {
+				    xhr.setRequestHeader(header, token);
+				},
+                success: function(response) {
+                    connectedBtn.removeClass().addClass('btn').addClass(response);
+                    $('[data-bs-toggle="popover"]').popover('hide');
+                },
+                error: function(xhr, status, error) {
+                    alert(xhr.responseText);
+                }
+            });
+        }
+
+        /* 이름 변경 */
+        $('.edit-button').click(function() {
+            var categoryRow = $(this).closest('.sortable-item');
+            var categoryText = categoryRow.find('.category-text');
+            var categoryInput = categoryRow.find('.category-input');
+
+            if (categoryText.is(':visible')) {
+                $(this).html('<i class="mdi mdi-check"></i>')
+                categoryText.hide();
+                categoryInput.val(categoryText.text()).show().focus();
+            } else {
+                $(this).html('<i class="mdi mdi-pencil"></i>')
+                categoryInput.hide();
+
+                updateName(categoryRow.attr('category-id'), categoryInput.val(), categoryText);
+            }
+        });
+
+        function updateName(id, name, categoryText) {
+			var paramData = {
+			    id : id,
+			    name : name
+			}
+			var param = JSON.stringify(paramData);
+
+            $.ajax({
+                url: '/category/updateName',
+                type: 'POST',
+                contentType: 'application/json',
+                data : param,
+                beforeSend : function(xhr) {
+				    xhr.setRequestHeader(header, token);
+				},
+                success: function(response) {
+                    categoryText.text(response).show();
+                },
+                error: function(xhr, status, error) {
+                    alert(xhr.responseText);
+                }
+            });
+        }
+
+        /* 순서 변경 */
+        $('table.sortable tbody').sortable({
+            start: function(event, ui) { // 테이블 셀 너비 유지
+                var cells = document.querySelectorAll('tbody td');
+                cells.forEach((cell, index) => {
+                    cell.style.width = originalWidths[index] + 'px';
+                });
+            },
+            update: function(event, ui) { // sort가 끝나고 DOM의 위치가 바뀌었으면
+                var data = [];
+
+                $(this).find('tr').each(function() {
+                    data.push($(this).attr('category-id'));
+                });
+
+                $.ajax({
+                    url: '/category/updatePosition',
+                    type: 'POST',
+                    data: JSON.stringify(data),
+                    contentType: 'application/json',
+                    beforeSend : function(xhr) {
+                        xhr.setRequestHeader(header, token);
+                    },
+                    success: function(response) {
+                        console.log(response);
+                    },
+                    error: function(xhr, status, error) {
+                        alert(xhr.responseText);
+                    }
+                });
+            }
+        });
+    </script>
+</th:block>
+
+</html>

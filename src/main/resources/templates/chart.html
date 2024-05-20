@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/layout1}">
+
+<th:block layout:fragment="css">
+</th:block>
+
+<body>
+<div layout:fragment="content">
+    <button id="prevMonthBtn"><</button>
+    <span id="currentMonth">2024년 5월</span>
+    <button id="nextMonthBtn">></button>
+
+    <ul class="nav nav-tabs justify-content-end">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="income-tab" data-bs-toggle="tab" data-bs-target="#income-tab-pane" type="button" role="tab" aria-controls="income-tab-pane" aria-selected="true">수입</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="expense-tab" data-bs-toggle="tab" data-bs-target="#expense-tab-pane" type="button" role="tab" aria-controls="expense-tab-pane" aria-selected="true">지출</button>
+        </li>
+    </ul>
+
+
+    <!-- 탭 컨텐츠 -->
+    <div class="tab-content" id="myTabContent">
+        <div class="tab-pane fade" id="income-tab-pane" role="tabpanel" aria-labelledby="income-tab" tabindex="0">
+            <div class="row">
+                <div class="col-md-4 grid-margin stretch-card">
+                    <div class="card">
+                        <div class="card-body income-content1">
+                            <h4 class="card-title">월별 수입 비율</h4>
+                            <canvas id="income-transaction-history" class="transaction-chart"></canvas>
+                            <div class="generatedContent"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-8 grid-margin stretch-card">
+                    <div class="card">
+                        <div class="card-body income-content2">
+                            <h4 class="card-title">수입 내역 통계</h4>
+                            <canvas id="income-barChart" style="height:250px"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade show active" id="expense-tab-pane" role="tabpanel" aria-labelledby="expense-tab" tabindex="0">
+            <div class="row">
+                <div class="col-md-4 grid-margin stretch-card">
+                    <div class="card">
+                        <div class="card-body expense-content1">
+                            <h4 class="card-title">월별 지출 비율</h4>
+                            <canvas id="expense-transaction-history" class="transaction-chart"></canvas>
+                            <div class="generatedContent"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-8 grid-margin stretch-card">
+                    <div class="card">
+                        <div class="card-body expense-content2">
+                            <h4 class="card-title">지출 내역 통계</h4>
+                            <canvas id="expense-barChart" style="height:250px"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+</body>
+
+<th:block layout:fragment="script">
+    <!-- 부트스트랩 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/vendors/chart.js/Chart.min.js}"></script>
+    <script th:inline="javascript">
+        (function($) {
+            var currentXHR = null; // 현재 실행 중인 AJAX 요청
+
+            $(function() {
+
+                // 이전에 실행 중인 AJAX 요청이 있다면 취소
+                function cancelPreviousRequest() {
+                    if (currentXHR !== null) {
+                        currentXHR.abort();
+                    }
+                }
+
+                var now = new Date();
+
+                var currentMonth = now.getMonth() + 1; // 현재 월
+                var currentYear = now.getFullYear(); // 현재 연도
+                var activeTab = 'expense';
+
+                updateStatistics(currentYear, currentMonth, activeTab);
+
+                $("[role='tab']").on('click', () => {
+                    activeTab = $('.tab-pane.active').attr('id').split('-')[0];
+                    updateStatistics(currentYear, currentMonth, activeTab);
+                })
+
+                // 이전 월로 이동하는 함수
+                function prevMonth() {
+                    if (currentMonth === 1) {
+                        currentMonth = 12;
+                        currentYear -= 1;
+                    } else {
+                        currentMonth -= 1;
+                    }
+                    updateStatistics(currentYear, currentMonth, activeTab);
+                }
+
+                // 다음 월로 이동하는 함수
+                function nextMonth() {
+                    if (currentMonth === 12) {
+                        currentMonth = 1;
+                        currentYear += 1;
+                    } else {
+                        currentMonth += 1;
+                    }
+                    updateStatistics(currentYear, currentMonth, activeTab);
+                }
+
+                $("#prevMonthBtn").click(prevMonth);
+                $("#nextMonthBtn").click(nextMonth);
+
+                // 월에 대한 통계 정보를 업데이트하는 함수
+                function updateStatistics(year, month, type) {
+                    cancelPreviousRequest(); // 이전에 실행 중인 AJAX 요청이 있다면 취소
+
+                    currentXHR = $.ajax({
+                        url: "/getStatistics",
+                        type: "GET",
+                        data: { year: year, month: month, type: type },
+                        success: function(data) {
+                            $("#currentMonth").text(year + "년 " + month + "월");
+                            updateChart(data.chartData, data.total, type);
+                        },
+                        error: function(xhr, status, error) {
+                            // 에러 발생 시 처리
+                            alert(xhr.responseText);
+                        }
+                    });
+                }
+
+                // 파이 차트 아래 div 내용 만들기
+                function generateTransactionContent(chartData) {
+                    var content = "";
+                    chartData.forEach(function(value, index) {
+                        if (value.amount !== 0 && index <= 1) {
+                            content += '<div class="bg-gray-dark d-flex d-md-block d-xl-flex flex-row py-3 px-4 px-md-3 px-xl-4 rounded mt-3">';
+                            content += '<div class="text-md-center text-xl-left align-self-center ' + value.color + '" style="border-radius: 10px; margin: 5px; padding: 5px; color: ' + (value.color === 'cloud' ? '#9c9c9c' : 'white') + ';">';
+                            content += '<h6 class="mb-1">' + value.data.toFixed(0) + '%</h6>';
+                            content += '</div>';
+                            content += '<div class="text-md-center text-xl-left align-self-center" style="padding: 5px; margin: 5px;">';
+                            content += '<h6 class="mb-1">' + value.label + '</h6>';
+                            content += '</div>';
+                            content += '<div class="align-self-center flex-grow text-right text-md-center text-xl-right py-md-2 py-xl-0">';
+                            content += '<h6 class="font-weight-bold mb-0">' + value.amount.toLocaleString('ko-Kr') + '원</h6>';
+                            content += '</div>';
+                            content += '</div>';
+                        }
+                    });
+                    return content;
+                }
+
+                // 차트 업데이트 함수
+                function updateChart(chartData, total, type) {
+                    // 이전 요소 제거
+                    $('canvas').remove();
+                    $('.generatedContent').remove();
+
+                    // 새 요소 추가
+                    $(`.${type}-content1`).append(`<canvas id="${type}-transaction-history" class="transaction-chart"></canvas>`);
+                    $(`.${type}-content1`).append(`<div class="generatedContent"></div>`);
+                    $(`.${type}-content2`).append(`<canvas id="${type}-barChart" style="height:250px"></canvas>`);
+
+                    // 새 차트 생성
+                    createChart(`${type}-transaction-history`, `${type}-barChart`, chartData, total);
+                    var content = generateTransactionContent(chartData);
+                    $(`#${type}-tab-pane .generatedContent`).html(content);
+                }
+
+                // 차트 생성 함수
+                function createChart(canvasId1, canvasId2, chartData, total) {
+                    var labels = chartData.map(function(item) {
+                        return item.label;
+                    });
+
+                    var data = chartData.map(function(item) {
+                        return item.data;
+                    });
+
+                    var amounts = chartData.map(function(item) {
+                        return item.amount;
+                    });
+
+                    var colorMap = {
+                        "cloud": "rgba(228, 234, 236, 1)",
+                        "red": "rgba(255, 99, 71, 1)",
+                        "orange": "rgba(247, 167, 0, 1)",
+                        "yellow": "rgba(249, 233, 0, 1)",
+                        "green": "rgba(153, 198, 109, 1)",
+                        "moss": "rgba(0, 128, 0, 1)",
+                        "blue": "rgba(36, 118, 226, 1)",
+                        "lavender": "rgba(204, 100, 195, 1)"
+                    };
+
+                    var colors = chartData.map(function(item) {
+                        return colorMap[item.color];
+                    });
+
+                    var areaData = {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: colors,
+                            borderWidth: 1.2
+                        }]
+                    };
+                    var areaOptions = {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        segmentShowStroke: false,
+                        cutoutPercentage: 70,
+                        elements: {
+                            arc: {
+                                borderWidth: 0
+                            }
+                        },
+                        legend: {
+                            display: false
+                        },
+                        tooltips: {
+                            enabled: true,
+                            callbacks: {
+                                label: function(tooltipItem, data) {
+                                    var dataset = data.datasets[tooltipItem.datasetIndex];
+                                    var total = dataset.data.reduce(function(previousValue, currentValue, currentIndex, array) {
+                                        return previousValue + currentValue;
+                                    });
+                                    var currentValue = dataset.data[tooltipItem.index];
+                                    var percentage = Math.floor(((currentValue / total) * 100) + 0.5); // 반올림하여 소수점 첫째자리까지 표시
+                                    return data.labels[tooltipItem.index] + ': ' + percentage + '%';
+                                }
+                            }
+                        }
+                    }
+                    var transactionhistoryChartPlugins = {
+                        beforeDraw: function(chart) {
+                          var width = chart.chart.width,
+                              height = chart.chart.height,
+                              ctx = chart.chart.ctx;
+
+                          ctx.restore();
+                          var fontSize = Math.round(height / 200);;
+                          ctx.font = fontSize + "rem sans-serif";
+                          ctx.textAlign = 'left';
+                          ctx.textBaseline = "middle";
+                          ctx.fillStyle = "#ffffff";
+
+                          var text = total.toLocaleString('ko-Kr') + "원",
+                              textX = Math.round((width - ctx.measureText(text).width) / 2),
+                              textY = height / 2.4;
+
+                          ctx.fillText(text, textX, textY);
+
+                          ctx.restore();
+                          var fontSize = Math.round(height / 266);
+                          ctx.font = fontSize + "rem sans-serif";
+                          ctx.textAlign = 'left';
+                          ctx.textBaseline = "middle";
+                          ctx.fillStyle = "#6c7293";
+
+                          var texts = $("#" + canvasId1).prev().text().substring(3, 6) + "총액",
+                              textsX = Math.round((width - ctx.measureText(text).width) / 2),
+                              textsY = height / 1.7;
+
+                          ctx.fillText(texts, textsX, textsY);
+                          ctx.save();
+                        }
+                    }
+                    var transactionhistoryChartCanvas = $("#" + canvasId1).get(0).getContext("2d");
+                    var transactionhistoryChart = new Chart(transactionhistoryChartCanvas, {
+                        type: 'doughnut',
+                        data: areaData,
+                        options: areaOptions,
+                        plugins: transactionhistoryChartPlugins
+                    });
+
+                    /* 막대 그래프 */
+                    var options = {
+                      scales: {
+                        yAxes: [{
+                          ticks: {
+                            beginAtZero: true
+                          },
+                          gridLines: {
+                            color: "rgba(204, 204, 204,0.1)"
+                          }
+                        }],
+                        xAxes: [{
+                          gridLines: {
+                            color: "rgba(204, 204, 204,0.1)"
+                          }
+                        }]
+                      },
+                      legend: {
+                        display: false
+                      },
+                      elements: {
+                        point: {
+                          radius: 0
+                        }
+                      },
+                      tooltips: {
+                        enabled: true,
+                        callbacks: {
+                          label: function(tooltipItem, data) {
+                            var dataset = data.datasets[tooltipItem.datasetIndex];
+                            var currentValue = dataset.data[tooltipItem.index];
+                            return currentValue.toLocaleString('ko-Kr') + '원';
+                          }
+                        }
+                      }
+                    };
+                    var areaData = {
+                        labels: labels,
+                        datasets: [{
+                            data: amounts,
+                            backgroundColor: colors,
+                            borderWidth: 1.2
+                        }]
+                    };
+
+                    var barChartCanvas = $("#" + canvasId2).get(0).getContext("2d");
+                    var barChart = new Chart(barChartCanvas, {
+                        type: 'bar',
+                        data: areaData,
+                        options: options
+                    });
+                }
+            });
+        })(jQuery);
+    </script>
+</th:block>
+
+</html>

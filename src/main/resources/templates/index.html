@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/layout1}">
+
+<th:block layout:fragment="css">
+  <style>
+    .floating-button {
+      position: fixed;
+      bottom: 50px;
+      right: 50px;
+    }
+
+    .floating-button > button {
+      width: 70px !important;
+      height: 70px !important;
+    }
+
+    .floating-button > button > i {
+      font-size: xx-large;
+    }
+
+    .modal-content {
+      background: white;
+      color: black;
+    }
+
+    #dtlModal select, #dtlModal input, #dtlModal textarea {
+      border: 1px solid black;
+      color: black;
+    }
+
+    /* 페이지네이션 버튼 스타일 */
+    .pagination {
+      margin: 2%;
+    }
+
+    .pagination-container {
+      list-style: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+  </style>
+</th:block>
+
+<head>
+  <meta name="_csrf" th:content="${_csrf.token}" />
+  <meta name="_csrf_header" th:content="${_csrf.headerName}" />
+</head>
+
+<body>
+  <div layout:fragment="content" class="row">
+    <div class="col-lg-12 grid-margin stretch-card">
+      <div class="card">
+        <div class="card-body">
+          <h4 class="card-title">내역</h4>
+
+          <button id="prevMonthBtn"><</button>
+          <span id="currentMonth"></span>
+          <button id="nextMonthBtn">></button>
+
+          <form class="table-responsive">
+            <table class="table table-hover table-striped">
+              <thead>
+              <tr>
+                <th> 날짜 </th>
+                <th> 자산 </th>
+                <th> 분류 </th>
+                <th> 내용 </th>
+                <th> 금액 </th>
+              </tr>
+              </thead>
+              <tbody class="table-group-divider">
+              </tbody>
+            </table>
+          </form>
+
+          <nav class="pagination-container"></nav>
+        </div>
+      </div>
+    </div>
+
+    <div class="floating-button">
+      <button type="button" onclick="$('#date').val(getTodayDate()); $('#insertModal').modal('show');"
+              class="btn btn-dribbble btn-rounded btn-icon">
+        <i class="mdi mdi-plus"></i>
+      </button>
+    </div>
+
+    <!-- Modal -->
+    <div id="dtlModal" class="modal" tabindex="-1">
+      <div class="modal-dialog">
+        <form class="modal-content" action="/transaction/delete" method="post" name="deleteForm">
+          <div class="modal-header">
+            <h5 class="modal-title">상세 정보</h5>
+            <button type="button" style="border: none;" class="btn-close"
+                    onclick="$('#dtlModal').modal('hide')" aria-label="Close">
+              <i class="mdi mdi-window-close"></i>
+            </button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" name="id" class="displayId" />
+            <div class="form-group dataTables_wrapper">
+              <label>유형:</label>
+              <select class="form-select displayType" disabled>
+                <option value="income">수입</option>
+                <option value="expense">지출</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>날짜:</label>
+              <input type="date" class="form-control displayDate" readonly="readonly">
+            </div>
+            <div class="form-group dataTables_wrapper">
+              <label>자산:</label>
+              <select class="form-select displayAsset" disabled>
+                <option th:each="a : ${assets}" th:text="${a.name}" th:value="${a.id}"></option>
+              </select>
+            </div>
+            <div class="form-group dataTables_wrapper">
+              <label>카테고리:</label>
+              <select class="form-select displayCategory" disabled>
+                <option th:each="c : ${incomeCategories}" th:text="${c.name}" th:value="${c.id}"></option>
+                <option th:each="c : ${expenseCategories}" th:text="${c.name}" th:value="${c.id}"></option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>금액:</label>
+              <input type="text" class="form-control displayAmountWithWon" readonly="readonly">
+            </div>
+            <div class="form-group">
+              <label>내용:</label>
+              <textarea class="form-control displayDescription" readonly="readonly"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary enableEditBtn" onclick="enableEdit()">수정</button>
+            <button type="button" onclick="if (confirm('정말로 삭제하시겠습니까?')) document.deleteForm.submit();"
+                    class="btn btn-secondary deleteBtn">삭제</button>
+          </div>
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+        </form>
+      </div>
+    </div>
+
+    <div id="insertModal" class="modal" tabindex="-1">
+      <div class="modal-dialog">
+        <form class="modal-content" th:object="${transactionFormDto}" name="insertForm">
+          <div class="modal-header">
+            <h5 class="modal-title">거래 추가</h5>
+            <button type="button" style="border: none;" class="btn-close"
+                    onclick="$('#insertModal').modal('hide')" aria-label="Close">
+              <i class="mdi mdi-window-close"></i>
+            </button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" th:field="*{id}" />
+            <input type="hidden" name="member" th:value="${member}" />
+            <div class="form-group dataTables_wrapper">
+              <label for="type">유형:</label>
+              <select id="type" class="form-select" style="color: white;">
+                <option value="income">수입</option>
+                <option value="expense" selected>지출</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label th:for="date">날짜:</label>
+              <input type="date" class="form-control" th:field="*{date}">
+            </div>
+            <div class="form-group dataTables_wrapper">
+              <label th:for="asset">자산:</label>
+              <select class="form-select" th:field="*{asset}" style="color: white;">
+                <option th:each="a : ${assets}" th:text="${a.name}" th:value="${a.id}"></option>
+              </select>
+            </div>
+            <div class="form-group dataTables_wrapper">
+              <label th:for="category">카테고리:</label>
+              <select class="form-select" th:field="*{category}" style="color: white;">
+                <option th:each="c : ${expenseCategories}" th:text="${c.name}" th:value="${c.id}"></option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label th:for="amount">금액:</label>
+              <input type="text" class="form-control" th:field="*{amount}" onkeyup="inputNumberFormat(this)" style="border: 1px solid gray;">
+            </div>
+            <div class="form-group">
+              <label th:for="description">내용:</label>
+              <textarea class="form-control" th:field="*{description}"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" onclick="submitData(document.insertForm, '/transaction/insert', '등록에 성공했습니다.');" class="btn btn-primary">저장</button>
+          </div>
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+        </form>
+      </div>
+    </div>
+
+    <div id="editModal" class="modal" tabindex="-1">
+      <div class="modal-dialog">
+        <form class="modal-content" name="editForm">
+          <div class="modal-header">
+            <h5 class="modal-title">내역 수정</h5>
+            <button type="button" style="border: none;" class="btn-close"
+                    onclick="$('#editModal').modal('hide')" aria-label="Close">
+              <i class="mdi mdi-window-close"></i>
+            </button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" name="id" class="displayId" />
+            <input type="hidden" name="member" th:value="${member}" />
+            <div class="form-group dataTables_wrapper">
+              <label for="edit_type">유형:</label>
+              <select id="edit_type" class="form-select displayType" style="color: white;">
+                <option value="income">수입</option>
+                <option value="expense">지출</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="edit_date">날짜:</label>
+              <input type="date" class="form-control displayDate" name="date" id="edit_date">
+            </div>
+            <div class="form-group dataTables_wrapper">
+              <label for="edit_asset">자산:</label>
+              <select class="form-select displayAsset" name="asset" id="edit_asset" style="color: white;">
+                <option th:each="a : ${assets}" th:text="${a.name}" th:value="${a.id}"></option>
+              </select>
+            </div>
+            <div class="form-group dataTables_wrapper">
+              <label for="edit_category">카테고리:</label>
+              <select class="form-select displayCategory" id="edit_category" name="category" style="color: white;">
+                <option th:each="c : ${incomeCategories}" th:text="${c.name}" th:value="${c.id}"></option>
+                <option th:each="c : ${expenseCategories}" th:text="${c.name}" th:value="${c.id}"></option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="edit_amount">금액:</label>
+              <input type="text" class="form-control displayAmount" name="amount" id="edit_amount"
+                     onkeyup="inputNumberFormat(this)" style="border: 1px solid gray;">
+            </div>
+            <div class="form-group">
+              <label for="edit_description">내용:</label>
+              <textarea class="form-control displayDescription" name="description" id="edit_description"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" onclick="submitData(document.editForm, '/transaction/edit', '수정에 성공했습니다.');" class="btn btn-primary">수정</button>
+          </div>
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+        </form>
+      </div>
+    </div>
+  </div>
+</body>
+
+<th:block layout:fragment="script">
+<script th:inline="javascript">
+  var errorMessage = [[${errorMessage}]];
+  if(errorMessage != null || errorMessage == "") alert(errorMessage);
+
+  var searchValue = [[${searchValue}]];
+
+  $(document).ready(function() {
+      var currentPath = window.location.pathname;
+
+      let currentPage = 1;
+      let currentYear = new Date().getFullYear();
+      let currentMonth = new Date().getMonth() + 1;
+
+      loadData(currentYear, currentMonth, currentPage, searchValue);
+
+      // 이전 월로 이동하는 함수
+      function prevMonth() {
+        if (currentMonth === 1) {
+          currentMonth = 12;
+          currentYear -= 1;
+        } else {
+            currentMonth -= 1;
+        }
+        loadData(currentYear, currentMonth, currentPage, searchValue);
+      }
+
+      // 다음 월로 이동하는 함수
+      function nextMonth() {
+        if (currentMonth === 12) {
+          currentMonth = 1;
+          currentYear += 1;
+        } else {
+          currentMonth += 1;
+        }
+        loadData(currentYear, currentMonth, currentPage, searchValue);
+      }
+
+      $("#prevMonthBtn").click(prevMonth);
+      $("#nextMonthBtn").click(nextMonth);
+  });
+
+  function loadData(year, month, page, searchValue) {
+      $.ajax({
+          url: "/loadItems",
+          method: "GET",
+          data: { year: year, month: month, page: page - 1, searchValue: searchValue },
+          success: function(data) {
+              currentYear = year;
+              currentMonth = month;
+
+              $("#currentMonth").text(year + "년 " + month + "월");
+
+              renderItems(data); // 데이터를 렌더링하는 함수 호출
+              renderPagination(data); // 페이징 버튼 데이터 렌더링
+          },
+          error: function(jqXHR, textStatus, errorThrown) {
+              alert(jqXHR.responseText);
+          }
+      });
+  }
+
+  // 데이터를 테이블에 렌더링하는 함수
+  function renderItems(data) {
+      var tableBody = $(".table tbody");
+      tableBody.empty(); // 기존 내용을 비우고 새로운 데이터를 추가할 준비
+
+      if (data.totalPages == 0) {
+        $(".table tbody").append('<tr><td colspan="5">해당하는 데이터가 없습니다.</td></tr>');
+        return;
+      }
+
+      // 받아온 데이터를 반복하여 테이블에 추가
+      $.each(data.content, function(index, item) {
+          var row = $("<tr></tr>");
+
+          // 카테고리의 유형에 따라 텍스트 색상 변경
+          var textColor = (item.category.type != null && item.category.type == 'INCOME') ? '#007bff' : 'red';
+          row.css('color', textColor);
+
+          // 각 열에 데이터 추가
+          row.append("<td>" + formatDate(new Date(item.date)) + "</td>");
+          row.append("<td>" + item.asset.name + "</td>");
+          row.append("<td>" + item.category.name + "</td>");
+          row.append("<td>" + item.description + "</td>");
+          row.append("<td>" + item.amount.toLocaleString('ko-KR') + '원' + "</td>");
+
+          // 클릭 시 데이터 상세정보 표시
+          row.addClass("clickable-row");
+          row.attr("onclick", "displayData('" + item.id + "')");
+
+          // 테이블에 행 추가
+          tableBody.append(row);
+      });
+  }
+
+  // 페이지 버튼을 동적으로 생성하는 함수
+  function renderPageButtons(start, end, currentPage) {
+    var paginationUl = $("<ul></ul>").addClass("pagination d-flex justify-content-center");
+    for (var i = start; i <= end; i++) {
+      var activeClass = i === currentPage ? 'page-item active' : 'page-item';
+      var buttonClass = (i === start) ? "page-link" : "page-link clickable-page";
+
+      var li = $("<li></li>").addClass(activeClass);
+      var button = $("<button></button>")
+                .addClass(buttonClass)
+                .attr("onclick", `loadData(${currentYear}, ${currentMonth}, ${i}, '${searchValue}');`)
+                .attr("data-page", i - 1)
+                .text(i);
+      li.append(button);
+      paginationUl.append(li);
+    }
+    return paginationUl;
+  }
+
+  function renderPagination(data) {
+    var paginationContainer = $(".pagination-container");
+    paginationContainer.empty();
+
+    var maxPage = 5; // 최대 페이지 수
+    var totalPages = data.totalPages;
+
+    if (totalPages == 0) return;
+
+    currentPage = data.number + 1; // 페이지 번호는 0부터 시작하므로 1을 더해줌
+    var start = Math.max(1, currentPage - Math.floor(maxPage / 2));
+    var end = Math.min(totalPages, start + maxPage - 1);
+
+    var prevLi = $("<li></li>").addClass("page-item").addClass(currentPage === 1 ? "disabled" : "");
+    var prevLink = $("<button></button>").addClass("page-link").attr("onclick", `loadData(${currentYear}, ${currentMonth}, ${currentPage - 1}, '${searchValue}');`).attr("data-page", currentPage - 2).text("이전");
+    prevLi.append(prevLink);
+
+    var nextLi = $("<li></li>").addClass("page-item").addClass(currentPage === totalPages ? "disabled" : "");
+    var nextLink = $("<button></button>").addClass("page-link").attr("onclick", `loadData(${currentYear}, ${currentMonth}, ${currentPage + 1}, '${searchValue}');`).attr("data-page", currentPage).text("다음");
+    nextLi.append(nextLink);
+
+    paginationContainer.append(renderPageButtons(start, end, currentPage).prepend(prevLi).append(nextLi));
+  }
+
+  // ★ 헤더에 있는 토큰 값을 가지고 온다. (반드시 같이 전송해야 함)
+  var token = $("meta[name='_csrf']").attr("content");
+  var header = $("meta[name='_csrf_header']").attr("content");
+
+  // yyyy-MM-dd 형식으로 날짜를 변환하는 함수
+  function formatDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  // 오늘 날짜를 가져오는 함수
+  function getTodayDate() {
+    var today = new Date();
+    return formatDate(today);
+  }
+
+  // 수입과 지출 선택마다 다른 option
+  $('#type, #edit_type').change(function() {
+    var selectedType = $(this).val();
+    var targetCategory = $(this).attr('id') === 'type' ? '#category' : '#edit_category';
+    var categories = selectedType === 'income' ? [[${incomeCategories}]] : [[${expenseCategories}]];
+
+    $(targetCategory).empty();
+    $.each(categories, function(index, category) {
+      $(targetCategory).append('<option value="' + category.id + '">' + category.name + '</option>');
+    });
+  });
+
+  // 천단위 콤마 찍는 함수
+  function inputNumberFormat(obj) {
+    let value = obj.value; // 입력한 가격
+    value = Number(value.replaceAll(',', '')); // 콤마를 제거
+
+    if (isNaN(value)) {
+      obj.value = 0; // 숫자가 아니면 0으로 바꾼다
+    } else {
+      const formatValue = value.toLocaleString('ko-KR');
+      obj.value = formatValue;
+    }
+  }
+
+  // insertModal 초기화
+  $('#insertModal').on('hide.bs.modal', function() {
+    $('#type, #asset, #category').each(function() {
+      $(this).val($(this).find('option:first').val());
+    });
+    $('#date').val(getTodayDate());
+    $('#amount, #description').val('');
+  })
+
+  // 서버에 전달할 데이터 설정
+  function setParamData(form) {
+    let amount = form.amount.value;
+    form.amount.value = Number(amount.replaceAll(',', '')); // 콤마 제거
+
+    return {
+      id : form.id.value,
+      member : form.member.value,
+      date : form.date.value,
+      description : form.description.value,
+      amount : form.amount.value,
+      asset : form.asset.value,
+      category : form.category.value
+    }
+  }
+
+  function submitData(form, url, successMessage) {
+    const paramData = setParamData(form);
+
+    $.ajax({
+      url: url,
+      type: 'POST',
+      data: paramData, // 직렬화한 Form 데이터를 전송한다.
+      beforeSend : function(xhr) {
+        xhr.setRequestHeader(header, token);
+      },
+      success: function (response) {
+        alert(successMessage);
+        $(form).closest('.modal').modal('hide');
+        location.reload();
+      },
+      error: function (xhr, status, error) {
+        alert(xhr.responseText);
+      }
+    });
+  }
+
+  // 내역 조회
+  function displayData(itemId) {
+
+    $.ajax({
+      url: "/transaction/view/" + itemId,
+      method: "GET",
+      success: function(response) {
+
+        $('.displayId').val(response.id);
+        $('.displayType').val(response.category.type == "INCOME" ? 'income' : 'expense');
+        $("#edit_type").trigger("change");
+        $('.displayDate').val(formatDate(new Date(response.date)));
+        $('.displayAmountWithWon').val(response.amount.toLocaleString('ko-KR') + '원');
+        $('.displayAmount').val(response.amount.toLocaleString('ko-KR'));
+        $('.displayDescription').val(response.description);
+        $('.displayAsset').val(response.asset.id);
+        $('.displayCategory').val(response.category.id);
+
+        $('#dtlModal').modal('show');
+      },
+      error: function(xhr, status, error) {
+        alert(xhr.responseText);
+      }
+    });
+  }
+
+  // 수정 버튼 누르면
+  function enableEdit() {
+    $('#dtlModal').modal('hide');
+    $('#editModal').modal('show');
+  }
+</script>
+</th:block>
+
+</html>

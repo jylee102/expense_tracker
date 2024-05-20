@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<nav class="sidebar sidebar-offcanvas" id="sidebar" th:fragment="sidebar">
+  <div class="sidebar-brand-wrapper d-none d-lg-flex align-items-center justify-content-center fixed-top">
+    <a class="sidebar-brand brand-logo" href="/"><img th:src="@{/images/logo.svg}" alt="logo" /></a>
+    <a class="sidebar-brand brand-logo-mini" href="/"><img th:src="@{/images/logo-mini.svg}" alt="logo" /></a>
+  </div>
+  <ul class="nav">
+    <li class="nav-item profile">
+      <div class="profile-desc">
+        <div class="profile-pic">
+          <div class="profile-name">
+            <h5 class="mb-0 font-weight-normal" sec:authentication="principal.name"></h5>
+            <span>Gold Member</span>
+          </div>
+        </div>
+        <a href="#" id="profile-dropdown" data-toggle="dropdown"><i class="mdi mdi-dots-vertical"></i></a>
+        <div class="dropdown-menu dropdown-menu-right sidebar-dropdown preview-list" aria-labelledby="profile-dropdown">
+          <a href="/settings/myInfo" class="dropdown-item preview-item">
+            <div class="preview-thumbnail">
+              <div class="preview-icon bg-dark rounded-circle">
+                <i class="mdi mdi-settings text-primary"></i>
+              </div>
+            </div>
+            <div class="preview-item-content">
+              <p class="preview-subject ellipsis mb-1 text-small">Account settings</p>
+            </div>
+          </a>
+          <div class="dropdown-divider"></div>
+          <a href="/members/logout" class="dropdown-item preview-item">
+            <div class="preview-thumbnail">
+              <div class="preview-icon bg-dark rounded-circle">
+                <i class="mdi mdi-logout text-danger"></i>
+              </div>
+            </div>
+            <div class="preview-item-content">
+              <p class="preview-subject ellipsis mb-1 text-small">Log out</p>
+            </div>
+          </a>
+        </div>
+      </div>
+    </li>
+    <li class="nav-item nav-category">
+      <span class="nav-link">Navigation</span>
+    </li>
+    <li class="nav-item menu-items">
+      <a class="nav-link" href="/">
+        <span class="menu-icon">
+          <i class="mdi mdi-book-minus"></i>
+        </span>
+        <span class="menu-title">내역</span>
+      </a>
+    </li>
+    <li class="nav-item menu-items">
+      <a class="nav-link" href="/view/calendar">
+        <span class="menu-icon">
+          <i class="mdi mdi-calendar-check"></i>
+        </span>
+        <span class="menu-title">달력</span>
+      </a>
+    </li>
+    <li class="nav-item menu-items">
+      <a class="nav-link" href="/view/chart">
+        <span class="menu-icon">
+          <i class="mdi mdi-chart-line"></i>
+        </span>
+        <span class="menu-title">통계</span>
+      </a>
+    </li>
+    <li class="nav-item menu-items">
+      <a class="nav-link" data-toggle="collapse" href="#ui-basic" aria-expanded="false" aria-controls="ui-basic">
+        <span class="menu-icon">
+          <i class="mdi mdi-settings"></i>
+        </span>
+        <span class="menu-title">설정/관리</span>
+        <i class="menu-arrow"></i>
+      </a>
+      <div class="collapse" id="ui-basic">
+        <ul class="nav flex-column sub-menu">
+          <li class="nav-item"> <a class="nav-link" href="/settings/assets">자산 설정</a></li>
+          <li class="nav-item"> <a class="nav-link" href="/settings/categories">카테고리 설정</a></li>
+          <li class="nav-item"> <a class="nav-link" href="/settings/myInfo">개인 정보 수정</a></li>
+        </ul>
+      </div>
+    </li>
+  </ul>
+</nav>
+</html>

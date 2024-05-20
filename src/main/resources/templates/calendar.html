@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/layout1}">
+
+<th:block layout:fragment="css">
+    <link rel="stylesheet" th:href="@{/css/calendar.css}">
+</th:block>
+
+<body>
+    <div layout:fragment="content" id="calendar">
+    </div>
+</body>
+
+<th:block layout:fragment="script">
+    <script th:src="@{//cdnjs.cloudflare.com/ajax/libs/moment.js/2.5.1/moment.min.js}"></script>
+    <script th:src="@{/js/calendar.js}"></script>
+    <script th:inline="javascript">
+        !function() {
+          const calendar = new Calendar('#calendar');
+        }();
+    </script>
+</th:block>
+</html>

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/layout1}">
+
+<th:block layout:fragment="css">
+    <style>
+        .card .card-body {
+            padding: 1.25rem;
+        }
+
+        td {
+            text-align: center;
+        }
+
+        .popover-body {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .color-box {
+            width: 15px;
+            height: 15px;
+            margin: 5px;
+        }
+    </style>
+</th:block>
+
+<head>
+    <meta name="_csrf" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:content="${_csrf.headerName}" />
+</head>
+
+<div layout:fragment="content">
+    <ul class="nav">
+        <li class="col-12 grid-margin nav-item">
+            <div class="card">
+                <div class="card-body">
+                    <a class="nav-link" data-toggle="collapse" href="#assetCategory" aria-expanded="false" aria-controls="ui-basic">
+                        <h4 class="card-title" style="margin: 0; display: flex; justify-content: space-between;">
+                            <div>자산 카테고리 관리</div>
+                            <i class="mdi mdi-chevron-down"></i>
+                        </h4>
+                    </a>
+                    <div class="collapse show" id="assetCategory">
+                        <hr>
+                        <p class="card-description" style="padding-left: 1.5rem;">
+                            자산 카테고리
+                        </p>
+                        <table class="table sortable" style="width: 100%;">
+                            <tbody>
+                            <tr th:each="asset : ${assets}"
+                                th:attr="asset-id=${asset.id}"
+                                class="sortable-item">
+                                <td style="width: 15%;">
+                                    <button type="button" th:onclick="'javascript:deleteAsset(' + ${asset.id} + ');'" style="background-color: inherit; border: none; color: maroon">
+                                        <i class="mdi mdi-minus-circle"></i>
+                                    </button>
+                                </td>
+                                <td style="width: 32.5%; text-align: left;">
+                                    <span th:text="${asset.name}" class="asset-text"></span>
+                                    <input type="text" class="form-control asset-name" style="display: none;">
+                                </td>
+                                <td style="width: 32.5%; text-align: left;">
+                                    <span th:text="${#numbers.formatInteger(asset.amount, 0, 'COMMA')} + '원'" class="amount-text"></span>
+                                    <input type="text" class="form-control asset-amount" onkeyup="inputNumberFormat(this)" style="display: none;">
+                                </td>
+                                <td style="width: 10%;">
+                                    <button type="button" class="edit-button"
+                                            style="background-color: inherit; border: none; color: white; min-width: 25px;">
+                                        <i class="mdi mdi-pencil"></i>
+                                    </button>
+                                </td>
+                                <td style="width: 10%;">
+                                    <div style="display: flex; flex-direction: column; font-size: 80%; min-width: 25px;">
+                                        <i class="mdi mdi-chevron-up"></i>
+                                        <i class="mdi mdi-chevron-down"></i>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                            <tfoot>
+                            <tr style="background-color: inherit; border: none; color: white">
+                                <td colspan="5" style="width: 100%; text-align: -webkit-center;">
+                                    <a class="nav-link" data-toggle="collapse" href="#addAsset"
+                                       aria-expanded="false" aria-controls="ui-basic" style="width: fit-content;">
+                                        카테고리 추가 <i class="mdi mdi-plus" style="font-size: larger;"></i>
+                                    </a>
+                                </td>
+                            </tr>
+
+                            <tr id="addAsset" class="collapse">
+                                <td style="width: 15%; background-color: inherit; color: white;">
+                                    <i class="mdi mdi-menu-right" style="font-size: larger;"></i>
+                                </td>
+                                <td style="width: 32.5%; text-align: left;">
+                                    <input type="text" class="form-control asset-input">
+                                </td>
+                                <td style="width: 32.5%;">
+                                    <input type="text" class="form-control amount-input" onkeyup="inputNumberFormat(this)">
+                                </td>
+                                <td style="width: 10%;">
+                                    <button type="button" class="save-btn"
+                                            style="background-color: inherit; border: none; color: white; min-width: 25px;">
+                                        저장
+                                    </button>
+                                </td>
+                                <td style="width: 10%;">
+                                    <button type="button" class="cancel-btn"
+                                            style="background-color: inherit; border: none; color: white; min-width: 25px;">
+                                        취소
+                                    </button>
+                                </td>
+                            </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </li>
+    </ul>
+</div>
+
+<th:block layout:fragment="script">
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery UI -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <script th:inline="javascript">
+
+        // 토큰 값
+        var token = $("meta[name='_csrf']").attr("content");
+		var header = $("meta[name='_csrf_header']").attr("content");
+
+        var originalWidths = []; // 셀 너비를 저장해놓을 공간
+        var resizeTimeout;
+
+        // 셀의 너비 저장(페이지가 로드될 때, 창 크기가 변경될 때)
+        function setOriginalWidths() {
+            var cells = document.querySelectorAll('tbody td');
+            cells.forEach((cell, index) => {
+                originalWidths[index] = cell.offsetWidth;
+            });
+        }
+
+        $(document).ready(function() {
+            setOriginalWidths();
+        });
+
+        window.addEventListener('resize', function(event){
+            clearTimeout(resizeTimeout); // 빠른 크기 전환 처리 위해
+            resizeTimeout = setTimeout(function() {
+                setOriginalWidths();
+            }, 200);
+        });
+
+        // 금액 포맷
+        function inputNumberFormat(obj) {
+            let value = obj.value; // 입력한 가격
+            value = Number(value.replaceAll(',', '')); // 콤마를 제거
+            if (isNaN(value)) {
+                obj.value = 0; // 숫자가 아니면 0으로 바꾼다.
+            } else {
+                const formatValue = value.toLocaleString('ko-KR'); // 한국에서 사용하는 콤마 단위로 숫자를 바꿔줌
+                obj.value = formatValue;
+            }
+        }
+
+        /* 자산 등록 */
+        $('.save-btn').on('click', function() {
+            var name = $(this).closest('tr').find('.asset-input').val();
+            var amount = $(this).closest('tr').find('.amount-input').val();
+
+            if (name == '') {
+                alert('카테고리의 이름을 지정해주세요.');
+                return;
+            }
+
+            amount = Number(amount.replaceAll(',', ''));
+
+            var paramData = {
+                name: name,
+                amount: amount
+            }
+            var param = JSON.stringify(paramData);
+
+            $.ajax({
+                url: '/asset/addAsset',
+                type: 'POST',
+                contentType: 'application/json',
+                data: param,
+                beforeSend: function(xhr) {
+                    xhr.setRequestHeader(header, token);
+                },
+                success: function(result, status) {
+                    alert(result);
+
+                    location.reload();
+                },
+                error: function(xhr, status, error) {
+                    alert(xhr.responseText);
+                }
+            });
+        });
+
+        // 등록 취소
+        $('.cancel-btn').on('click', function() {
+           $('.asset-input').val('');
+           $('.amount-input').val('');
+        });
+
+        /* 자산 삭제 */
+        function deleteAsset(id) {
+            if (confirm("정말로 삭제하시겠습니까?")) {
+                $.ajax({
+                    url: '/asset/deleteAsset/' + id,
+                    type: 'DELETE',
+                    contentType: 'application/json',
+                    beforeSend: function(xhr) {
+                        xhr.setRequestHeader(header, token);
+                    },
+                    success: function(result, status) {
+                        alert(result);
+
+                        location.reload();
+                    },
+                    error: function(xhr, status, error) {
+                        alert(xhr.responseText);
+                    }
+                });
+            }
+        }
+
+        /* 이름과 자산 금액 변경 */
+        $('.edit-button').click(function() {
+            var assetRow = $(this).closest('.sortable-item');
+
+            var assetText = assetRow.find('.asset-text');
+            var assetName = assetRow.find('.asset-name');
+
+            var amountText = assetRow.find('.amount-text');
+            var assetAmount = assetRow.find('.asset-amount');
+
+            if (assetText.is(':visible')) {
+                $(this).html('<i class="mdi mdi-check"></i>');
+
+                assetText.hide();
+                assetName.val(assetText.text()).show().focus();
+
+                amountText.hide();
+                assetAmount.val(amountText.text().replace('원', '')).show().focus();
+            } else {
+                $(this).html('<i class="mdi mdi-pencil"></i>');
+                assetName.hide();
+                assetAmount.hide();
+
+                updateAsset(assetRow.attr('asset-id'),
+                    assetName.val(), assetText,
+                    Number(assetAmount.val().replaceAll(',', '')), amountText);
+            }
+        });
+
+        function updateAsset(id, name, assetText, amount, amountText) {
+			var paramData = {
+			    id : id,
+			    name : name,
+			    amount : amount
+			}
+			var param = JSON.stringify(paramData);
+
+            $.ajax({
+                url: '/asset/updateAsset',
+                type: 'POST',
+                contentType: 'application/json',
+                data : param,
+                beforeSend : function(xhr) {
+				    xhr.setRequestHeader(header, token);
+				},
+                success: function(response) {
+                    assetText.text(response[0]).show();
+                    amountText.text(Number(response[1]).toLocaleString('ko-KR') + '원').show();
+                },
+                error: function(xhr, status, error) {
+                    alert(xhr.responseText);
+                }
+            });
+        }
+
+        /* 순서 변경 */
+        $('table.sortable tbody').sortable({
+            start: function(event, ui) { // 테이블 셀 너비 유지
+                var cells = document.querySelectorAll('tbody td');
+                cells.forEach((cell, index) => {
+                    cell.style.width = originalWidths[index] + 'px';
+                });
+            },
+            update: function(event, ui) { // sort가 끝나고 DOM의 위치가 바뀌었으면
+                var data = [];
+
+                $(this).find('tr').each(function() {
+                    data.push($(this).attr('asset-id'));
+                });
+
+                $.ajax({
+                    url: '/asset/updatePosition',
+                    type: 'POST',
+                    data: JSON.stringify(data),
+                    contentType: 'application/json',
+                    beforeSend : function(xhr) {
+                        xhr.setRequestHeader(header, token);
+                    },
+                    success: function(response) {
+                        console.log(response);
+                    },
+                    error: function(xhr, status, error) {
+                        alert(xhr.responseText);
+                    }
+                });
+            }
+        });
+    </script>
+</th:block>
+
+</html>

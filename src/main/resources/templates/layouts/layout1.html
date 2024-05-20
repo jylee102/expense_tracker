@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>expenseTracker</title>
+
+    <!-- plugins:css -->
+    <link rel="stylesheet" th:href="@{/vendors/mdi/css/materialdesignicons.min.css}">
+    <link rel="stylesheet" th:href="@{/vendors/css/vendor.bundle.base.css}">
+    <!-- endinject -->
+    <!-- Plugin css for this page -->
+    <link rel="stylesheet" th:href="@{/vendors/jvectormap/jquery-jvectormap.css}">
+    <link rel="stylesheet" th:href="@{/vendors/flag-icon-css/css/flag-icon.min.css}">
+    <link rel="stylesheet" th:href="@{/vendors/owl-carousel-2/owl.carousel.min.css}">
+    <link rel="stylesheet" th:href="@{/vendors/owl-carousel-2/owl.theme.default.min.css}">
+    <!-- End plugin css for this page -->
+    <!-- inject:css -->
+    <!-- endinject -->
+    <!-- Layout styles -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <!-- End layout styles -->
+    <link rel="shortcut icon" th:href="@{/images/favicon.png}" />
+
+    <!-- 각 페이지의 CSS가 작성될 위치 -->
+    <th:block layout:fragment="css"></th:block>
+
+</head>
+<body>
+<div class="site-wrap">
+    <div class="container-scroller">
+        <div th:replace="~{fragments/sidebar::sidebar}"></div>
+        <div class="container-fluid page-body-wrapper">
+            <div th:replace="~{fragments/header::header}"></div>
+            <div class="main-panel">
+                <div class="content-wrapper">
+                    <div layout:fragment="content" class="content"></div>
+                    <div th:replace="~{fragments/footer::footer}"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/vendors/js/vendor.bundle.base.js}"></script>
+
+<!-- inject:js -->
+<script th:src="@{/js/off-canvas.js}"></script>
+<script th:src="@{/js/hoverable-collapse.js}"></script>
+<script th:src="@{/js/misc.js}"></script>
+<script th:src="@{/js/settings.js}"></script>
+<script th:src="@{/js/todolist.js}"></script>
+<!-- endinject -->
+
+<!-- 각 페이지의 스크립트가 작성될 위치 -->
+<th:block layout:fragment="script"></th:block>
+</body>
+</html>
