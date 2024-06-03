@@ -15,7 +15,7 @@ public class JasyptConfig {
     public StringEncryptor stringEncryptor() {
         PooledPBEStringEncryptor encryptor = new PooledPBEStringEncryptor();
         SimpleStringPBEConfig config = new SimpleStringPBEConfig();
-        config.setPassword("haseo_key"); //암복호화에 필요한 키 지정
+        config.setPassword(""); //암복호화에 필요한 키 지정
         config.setAlgorithm("PBEWithMD5AndDES");
         config.setKeyObtentionIterations("1000");
         config.setPoolSize("1");

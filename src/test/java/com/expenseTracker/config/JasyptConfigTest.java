@@ -1,12 +1,10 @@
 package com.expenseTracker.config;
 
-import org.jasypt.encryption.StringEncryptor;
 import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 public class JasyptConfigTest {
-    public String key = "haseo_key"; //암복화에 필요한 키
+    public String key = ""; //암복화에 필요한 키
 
     @Test
     void stringEncryptor() {
