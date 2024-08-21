@@ -1,7 +1,7 @@
 # 📒🧾 expenseTracker 💵📊
 
 ### 도메인 주소
-expensetracker.kro.kr
+[expensetracker.kro.kr](expensetracker.kro.kr)
 
 ## 📑 목차 
 - [소개](#소개)
